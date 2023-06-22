@@ -21,7 +21,7 @@ import telran.java47.accounting.model.UserAccount;
 @Component
 @Order(20)
 @RequiredArgsConstructor
-public class AdminFilter implements Filter {
+public class RolesManagingFilter implements Filter {
 
 	final UserAccountRepository userAccountRepository;
 	
@@ -32,7 +32,7 @@ public class AdminFilter implements Filter {
 		HttpServletResponse response = (HttpServletResponse) resp;
 
 		if (checkEndPoint(request.getMethod(), request.getServletPath())) {
-			UserAccount userAccount = userAccountRepository.findById(request.getUserPrincipal().getName()).orElse(null);
+			UserAccount userAccount = userAccountRepository.findById(request.getUserPrincipal().getName()).get();
 //			we don't need to check usrAccount == null, because we have AuthentificationFilter, 
 			if (! userAccount.getRoles().contains("ADMINISTRATOR")){
 				response.sendError(403, "not enough rights");
