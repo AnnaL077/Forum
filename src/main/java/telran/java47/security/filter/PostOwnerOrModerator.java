@@ -44,7 +44,7 @@ public class PostOwnerOrModerator implements Filter {
 				return;
 			}
 			User user = (User) request.getUserPrincipal(); 
-			if (!(user.getName().equalsIgnoreCase(post.getAuthor()) || user.getRoles().contains(Roles.MODERATOR.toString()))) {
+			if (!(user.getName().equalsIgnoreCase(post.getAuthor()) || user.getRoles().contains(Roles.MODERATOR))) {
 				response.sendError(403, CommentsOfError.NOT_ENOUTH_RIGHTS.toString());
 				return;
 			}

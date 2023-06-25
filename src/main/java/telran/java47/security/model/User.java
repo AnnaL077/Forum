@@ -12,7 +12,7 @@ import lombok.Getter;
 public class User implements Principal {
 	String userName;
 	@Getter
-	Set<String> roles;
+	Set<Roles> roles;
 
 	@Override
 	public String getName() {

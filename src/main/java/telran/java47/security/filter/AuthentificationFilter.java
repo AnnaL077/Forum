@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.Base64;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -24,6 +25,7 @@ import telran.java47.accounting.dao.UserAccountRepository;
 import telran.java47.accounting.model.UserAccount;
 import telran.java47.security.context.SecurityContext;
 import telran.java47.security.model.CommentsOfError;
+import telran.java47.security.model.Roles;
 import telran.java47.security.model.User;
 
 @Component
@@ -60,7 +62,14 @@ public class AuthentificationFilter implements Filter {
 					response.sendError(401, CommentsOfError.LOGIN_OR_PASSWORD_IS_NOT_VALID.toString());
 					return;
 				}
-				user = new User(userAccount.getLogin(), userAccount.getRoles());
+
+				Set<Roles> rolesEnum = userAccount.getRoles().stream()
+								.map(r -> Roles.valueOf(r))
+								.collect(Collectors.toSet());
+
+
+				user = new User(userAccount.getLogin(), rolesEnum);
+				
 				securityContext.addUserSession(sessionId, user);
 			}
 			request = new WrappedRequest(request, user.getName(), user.getRoles() );
@@ -84,9 +93,9 @@ public class AuthentificationFilter implements Filter {
 	
 	private static class WrappedRequest extends HttpServletRequestWrapper{
 		String login;
-		Set<String> roles;
+		Set<Roles> roles;
 
-		public WrappedRequest(HttpServletRequest request, String login, Set<String> roles) {
+		public WrappedRequest(HttpServletRequest request, String login, Set<Roles> roles) {
 			super(request);
 			this.login = login;
 			this.roles = roles;

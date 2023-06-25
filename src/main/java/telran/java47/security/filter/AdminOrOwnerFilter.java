@@ -35,7 +35,7 @@ public class AdminOrOwnerFilter implements Filter {
 			User user = (User) request.getUserPrincipal(); 
 			String path = request.getServletPath();
 			String login =  path.split("/")[path.split("/").length - 1];
-			if (!(user.getRoles().contains(Roles.ADMINISTRATOR.toString()) || user.getName().equalsIgnoreCase(login))) {
+			if (!(user.getRoles().contains(Roles.ADMINISTRATOR) || user.getName().equalsIgnoreCase(login))) {
 				response.sendError(403, CommentsOfError.NOT_ENOUTH_RIGHTS.toString());
 				return;
 			}

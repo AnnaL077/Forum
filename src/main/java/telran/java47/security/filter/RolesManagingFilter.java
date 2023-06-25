@@ -31,7 +31,7 @@ public class RolesManagingFilter implements Filter {
 
 		if (checkEndPoint(request.getMethod(), request.getServletPath())) {
 			User user = (User) request.getUserPrincipal(); 
-			if (! user.getRoles().contains(Roles.ADMINISTRATOR.toString())){
+			if (! user.getRoles().contains(Roles.ADMINISTRATOR)){
 				response.sendError(403, CommentsOfError.NOT_ENOUTH_RIGHTS.toString());
 				return;
 			}
