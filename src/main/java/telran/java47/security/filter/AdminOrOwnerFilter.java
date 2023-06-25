@@ -11,11 +11,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
-import telran.java47.accounting.dao.UserAccountRepository;
-import telran.java47.accounting.model.UserAccount;
+import telran.java47.security.model.CommentsOfError;
+import telran.java47.security.model.Roles;
+import telran.java47.security.model.User;
 
 
 @Component
@@ -23,7 +25,6 @@ import telran.java47.accounting.model.UserAccount;
 @RequiredArgsConstructor
 public class AdminOrOwnerFilter implements Filter {
 
-	final UserAccountRepository userAccountRepository;
 	
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
@@ -31,10 +32,11 @@ public class AdminOrOwnerFilter implements Filter {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) resp;
 		if (checkEndPoint(request.getMethod(), request.getServletPath())) {
-			
-			if (!(checkAdmin(request.getUserPrincipal().getName()) 
-					|| checkOwner(request.getUserPrincipal().getName(), request.getServletPath().substring(request.getServletPath().lastIndexOf("/") + 1)))) {
-				response.sendError(403, "not enough rights");
+			User user = (User) request.getUserPrincipal(); 
+			String path = request.getServletPath();
+			String login =  path.split("/")[path.split("/").length - 1];
+			if (!(user.getRoles().contains(Roles.ADMINISTRATOR.toString()) || user.getName().equalsIgnoreCase(login))) {
+				response.sendError(403, CommentsOfError.NOT_ENOUTH_RIGHTS.toString());
 				return;
 			}
 		}
@@ -43,16 +45,8 @@ public class AdminOrOwnerFilter implements Filter {
 	
 
 	private boolean checkEndPoint(String method, String path) {
-		return ("DELETE".equalsIgnoreCase(method) && path.matches("/account/user/\\w+/?"));
+		return (HttpMethod.DELETE.name().equalsIgnoreCase(method) && path.matches("/account/user/\\w+/?"));
 	}
-	
-	private boolean checkAdmin(String login) {
-		UserAccount userAccount = userAccountRepository.findById(login).orElse(null);
-		return userAccount.getRoles().contains("ADMINISTRATOR");
-	}
-	
-	private boolean checkOwner(String login, String loginPath) {
-		return login.equalsIgnoreCase(loginPath);
-	}
+
 
 }

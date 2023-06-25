@@ -11,20 +11,18 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
-
-import lombok.RequiredArgsConstructor;
-import telran.java47.accounting.dao.UserAccountRepository;
-import telran.java47.accounting.model.UserAccount;
+import telran.java47.security.model.CommentsOfError;
+import telran.java47.security.model.Roles;
+import telran.java47.security.model.User;
 
 @Component
 @Order(20)
-@RequiredArgsConstructor
+
 public class RolesManagingFilter implements Filter {
 
-	final UserAccountRepository userAccountRepository;
-	
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
 			throws IOException, ServletException {
@@ -32,19 +30,16 @@ public class RolesManagingFilter implements Filter {
 		HttpServletResponse response = (HttpServletResponse) resp;
 
 		if (checkEndPoint(request.getMethod(), request.getServletPath())) {
-			UserAccount userAccount = userAccountRepository.findById(request.getUserPrincipal().getName()).get();
-//			we don't need to check usrAccount == null, because we have AuthentificationFilter, 
-			if (! userAccount.getRoles().contains("ADMINISTRATOR")){
-				response.sendError(403, "not enough rights");
+			User user = (User) request.getUserPrincipal(); 
+			if (! user.getRoles().contains(Roles.ADMINISTRATOR.toString())){
+				response.sendError(403, CommentsOfError.NOT_ENOUTH_RIGHTS.toString());
 				return;
 			}
 		}
-		
 		chain.doFilter(request, response);
-
 	}
 	
 	private boolean checkEndPoint(String method, String path) {
-		return (("PUT".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method)) && path.matches("/account/user/\\w+/role/\\w+/?"));
+		return ((HttpMethod.PUT.name().equalsIgnoreCase(method) || HttpMethod.DELETE.name().equalsIgnoreCase(method)) && path.matches("/account/user/\\w+/role/\\w+/?"));
 	}
 }

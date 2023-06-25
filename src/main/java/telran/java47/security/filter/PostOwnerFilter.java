@@ -11,14 +11,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
 import telran.java47.post.dao.PostRepository;
 import telran.java47.post.model.Post;
+import telran.java47.security.model.CommentsOfError;
 
 @Component
-@Order(60)
+@Order(50)
 @RequiredArgsConstructor
 public class PostOwnerFilter implements Filter {
 
@@ -31,18 +33,15 @@ public class PostOwnerFilter implements Filter {
 		HttpServletResponse response = (HttpServletResponse) resp;
 		if (checkEndPoint(request.getMethod(), request.getServletPath())) {
 			String path = request.getServletPath();
-			if (path.lastIndexOf("/", 0) == path.length() - 1 ) {
-				path = path.substring(0, path.length() - 2);
-			}
-			String postID = path.substring(path.lastIndexOf("/") + 1);
+			String postID = path.split("/")[path.split("/").length - 1];
 			Post post = postRepository.findById(postID).orElse(null);
 			if (post == null) {
-				response.sendError(401, "post is not founded");
+				response.sendError(401, CommentsOfError.POST_IS_NOT_FOUNDED.toString());
 				return;
 			}
 
 			if (!request.getUserPrincipal().getName().equalsIgnoreCase(post.getAuthor())) {
-				response.sendError(403, "not enough rights");
+				response.sendError(403, CommentsOfError.NOT_ENOUTH_RIGHTS.toString());
 				return;
 			}
 		}
@@ -51,7 +50,7 @@ public class PostOwnerFilter implements Filter {
 
 	private boolean checkEndPoint(String method, String path) {
 		
-		return ("PUT".equalsIgnoreCase(method) && path.matches("/forum/post/\\w+/?"));
+		return (HttpMethod.PUT.name().equalsIgnoreCase(method) && path.matches("/forum/post/\\w+/?"));
 	}
 
 }

@@ -3,6 +3,7 @@ package telran.java47.security.filter;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Base64;
+import java.util.Set;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -12,16 +13,18 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-
-
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
-
 import lombok.RequiredArgsConstructor;
 import telran.java47.accounting.dao.UserAccountRepository;
 
 import telran.java47.accounting.model.UserAccount;
+import telran.java47.security.context.SecurityContext;
+import telran.java47.security.model.CommentsOfError;
+import telran.java47.security.model.User;
 
 @Component
 @RequiredArgsConstructor
@@ -30,36 +33,47 @@ import telran.java47.accounting.model.UserAccount;
 public class AuthentificationFilter implements Filter {
 	
 	final UserAccountRepository userAccountRepository;
+	final SecurityContext securityContext;
+
 
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
 			throws IOException, ServletException {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) resp;
+
 		if (checkEndPoint(request.getMethod(), request.getServletPath())) {
-			String[] credentials;
-			try {
-				credentials = getCredentials(request.getHeader("Authorization"));
-			} catch (Exception e) {
-				response.sendError(401, "token is not valid");
-				return;
+			String sessionId = request.getSession().getId();
+			User user = securityContext.getUserBySessionId(sessionId);
+		
+			if (user == null) { 
+				String[] credentials;
+				try {
+					
+					credentials = getCredentials(request.getHeader(HttpHeaders.AUTHORIZATION));
+				} catch (Exception e) {
+					response.sendError(401, CommentsOfError.TOKEN_IS_NOT_VALID.toString());
+					return;
+				}
+				UserAccount userAccount = userAccountRepository.findById(credentials[0]).orElse(null);
+				if (userAccount == null || !BCrypt.checkpw(credentials[1], userAccount.getPassword())) {
+					response.sendError(401, CommentsOfError.LOGIN_OR_PASSWORD_IS_NOT_VALID.toString());
+					return;
+				}
+				user = new User(userAccount.getLogin(), userAccount.getRoles());
+				securityContext.addUserSession(sessionId, user);
 			}
-			UserAccount userAccount = userAccountRepository.findById(credentials[0]).orElse(null);
-			if (userAccount == null || !BCrypt.checkpw(credentials[1], userAccount.getPassword())) {
-				response.sendError(401, "login or password is not valid");
-				return;
-			} 
-			request = new WrappedRequest(request, credentials[0]);
+			request = new WrappedRequest(request, user.getName(), user.getRoles() );
 		}
 		chain.doFilter(request, response);
 
 	}
 
 	private boolean checkEndPoint(String method, String path) {
-		//return !("POST".equalsIgnoreCase(method) && path.matches("/account/register/?"));
-		
-		return !(("POST".equalsIgnoreCase(method) && path.matches("/account/register/?")) ||
-				(("POST".equalsIgnoreCase(method)|| "GET".equalsIgnoreCase(method) )&& path.matches("/forum/posts.*")));
+
+
+		return !((HttpMethod.POST.name().equalsIgnoreCase(method) && path.matches("/account/register/?")) ||
+				((HttpMethod.POST.name().equalsIgnoreCase(method)|| HttpMethod.GET.name().equalsIgnoreCase(method) )&& path.matches("/forum/posts.*")));
 	}
 
 	private String[] getCredentials(String token) {
@@ -70,14 +84,16 @@ public class AuthentificationFilter implements Filter {
 	
 	private static class WrappedRequest extends HttpServletRequestWrapper{
 		String login;
+		Set<String> roles;
 
-		public WrappedRequest(HttpServletRequest request, String login) {
+		public WrappedRequest(HttpServletRequest request, String login, Set<String> roles) {
 			super(request);
 			this.login = login;
+			this.roles = roles;
 		}
 		@Override
 		public Principal getUserPrincipal() {
-			return () -> login;
+			return new User(login, roles);
 		}
 		
 	}

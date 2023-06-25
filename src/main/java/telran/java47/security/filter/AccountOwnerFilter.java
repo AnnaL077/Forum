@@ -12,8 +12,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
+
 import lombok.RequiredArgsConstructor;
+import telran.java47.security.model.CommentsOfError;
 
 
 @Component
@@ -31,22 +34,21 @@ public class AccountOwnerFilter implements Filter {
 		
 		if (checkEndPoint(request.getMethod(), request.getServletPath())) {
 			String path = request.getServletPath();
-			if (path.lastIndexOf("/", 0) == path.length() - 1 ) {
-				path = path.substring(0, path.length() - 2);
-			}
-			String login = path.substring(path.lastIndexOf("/") + 1);
+			String login = path.split("/")[path.split("/").length - 1];
 			if (!request.getUserPrincipal().getName().equalsIgnoreCase(login)) {
-				response.sendError(403, "not enough rights");
+				response.sendError(403, CommentsOfError.NOT_ENOUTH_RIGHTS.toString());
 				return;
-			}
-			
+			}	
 		}
 		
 		chain.doFilter(request, response);
 	}
 
 	private boolean checkEndPoint(String method, String path) {
-		return ("PUT".equalsIgnoreCase(method) && path.matches("/account/user/\\w+/?"));
+		return ((HttpMethod.PUT.name().equalsIgnoreCase(method) && path.matches("/account/user/\\w+/?")) ||
+				(HttpMethod.POST.name().equalsIgnoreCase(method) && path.matches("/forum/post/\\w+/?")) ||
+				(HttpMethod.PUT.name().equalsIgnoreCase(method) && path.matches("/forum/post/\\w+/comment/\\w+/?")));
+
 	}
 
 }
