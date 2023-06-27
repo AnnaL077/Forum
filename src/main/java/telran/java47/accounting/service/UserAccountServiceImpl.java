@@ -1,5 +1,7 @@
 package telran.java47.accounting.service;
 
+import java.time.LocalDateTime;
+
 import org.mindrot.jbcrypt.BCrypt;
 import org.modelmapper.ModelMapper;
 import org.springframework.boot.CommandLineRunner;
@@ -77,6 +79,7 @@ public class UserAccountServiceImpl implements UserAccountService, CommandLineRu
 		UserAccount userAccount = userAccountRepository.findById(login).orElseThrow(UserNotFoundException::new);
 		String password = passwordEncoder.encode(newPassword);
 		userAccount.setPassword(password);
+		userAccount.setDatePassword(LocalDateTime.now().plusDays(1));
 		userAccountRepository.save(userAccount);
 
 	}
@@ -86,6 +89,7 @@ public class UserAccountServiceImpl implements UserAccountService, CommandLineRu
 		if (!userAccountRepository.existsById("admin")) {
 			String password = passwordEncoder.encode("admin");
 			UserAccount userAccount = new UserAccount("admin", password, "", "");
+			userAccount.setDatePassword(LocalDateTime.now().plusDays(1000));
 			userAccount.addRole("USER");
 			userAccount.addRole("MODERATOR");
 			userAccount.addRole("ADMINISTRATOR");

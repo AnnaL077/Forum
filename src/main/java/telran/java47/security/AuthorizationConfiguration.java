@@ -15,9 +15,13 @@ public class AuthorizationConfiguration {
 		http.httpBasic();
 		http.csrf().disable();
 		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+	
 		http.authorizeRequests(authorize -> authorize
 				.mvcMatchers("/account/register", "/forum/posts**")
 					.permitAll()
+				.mvcMatchers(HttpMethod.PUT, "/account/password")
+					.authenticated()
+				
 				.mvcMatchers("/account/user/{login}/role/{role}")
 					.hasRole("ADMINISTRATOR")
 				.mvcMatchers(HttpMethod.PUT, "/account/user/{login}")
@@ -34,6 +38,7 @@ public class AuthorizationConfiguration {
 					.access("@customSecurity.checkPostAuthor(#id, authentication.name) or hasRole('MODERATOR')")
 				.anyRequest()
 					.authenticated()
+					
 				);
 		
 		return http.build();
