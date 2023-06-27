@@ -1,5 +1,10 @@
 package telran.java47.security;
 
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,13 +24,23 @@ final UserAccountRepository userAccountRepository;
 	
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		System.out.println(username);
 		UserAccount userAccount = userAccountRepository.findById(username)
 				.orElseThrow(() -> new UsernameNotFoundException(username));
-		String[] roles = userAccount.getRoles()
+		
+		System.out.println(userAccount.getFirstName());
+		List<String> roles = userAccount.getRoles()
 				.stream()
 				.map(r -> "ROLE_" + r)
-				.toArray(String[]::new);
- 		return new User(username, userAccount.getPassword(), AuthorityUtils.createAuthorityList(roles));
+				.toList();
+		
+		if (userAccount.getDatePassword().isAfter(LocalDateTime.now())) {
+			roles.add("ROLE_LIFE");
+		}
+		userAccount.getRoles().forEach(System.out::println);
+	
+		return new User(username, userAccount.getPassword(), AuthorityUtils.createAuthorityList(roles.toArray(String[]::new)));
+ 		
 	}
 
 }
