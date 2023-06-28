@@ -5,10 +5,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.SecurityFilterChain;
 
+import lombok.AllArgsConstructor;
+
 @Configuration
+@AllArgsConstructor
 public class AuthorizationConfiguration {
+	
+
 
 	@Bean
 	public SecurityFilterChain configure(HttpSecurity http) throws Exception {
@@ -16,6 +24,15 @@ public class AuthorizationConfiguration {
 		http.csrf().disable();
 		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 		
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		UserDetails userDetails = null;
+		if (authentication != null) {
+			System.out.println(authentication.toString());
+			userDetails = (UserDetails) authentication.getPrincipal();
+		}
+		
+		if (userDetails == null || userDetails.isAccountNonExpired()) {
+			System.out.println("in regular case");
 		http.authorizeRequests(authorize -> authorize
 				.mvcMatchers("/account/register", "/forum/posts**")
 					.permitAll()
@@ -34,31 +51,18 @@ public class AuthorizationConfiguration {
 				.mvcMatchers(HttpMethod.DELETE, "/forum/post/{id}")
 					.access("@customSecurity.checkPostAuthor(#id, authentication.name) or hasRole('MODERATOR')")
 				.anyRequest()
-					.authenticated()
-				);
-	
-//		http.authorizeRequests(authorize -> authorize
-//				.mvcMatchers("/account/register", "/forum/posts**")
-//					.permitAll()
-//				.mvcMatchers(HttpMethod.PUT, "/account/password")
-//					.authenticated()
-//				.mvcMatchers("/account/user/{login}/role/{role}")
-//					.access("hasRole('ADMINISTRATOR') and hasRole('LIFE')")
-//				.mvcMatchers(HttpMethod.PUT, "/account/user/{login}")
-//					.access("#login == authentication.name and hasRole('LIFE')")
-//				.mvcMatchers(HttpMethod.DELETE, "/account/user/{login}")
-//					.access("(#login == authentication.name and hasRole('LIFE')) or (hasRole('ADMINISTRATOR') and hasRole('LIFE'))")
-//				.mvcMatchers(HttpMethod.POST, "/forum/post/{author}")
-//					.access("#author == authentication.name and hasRole('LIFE')")
-//				.mvcMatchers(HttpMethod.PUT, "/forum/post/{id}/comment/{author}")
-//					.access("#author == authentication.name and hasRole('LIFE')")
-//				.mvcMatchers(HttpMethod.PUT, "/forum/post/{id}")
-//					.access("@customSecurity.checkPostAuthor(#id, authentication.name) and hasRole('LIFE')")
-//				.mvcMatchers(HttpMethod.DELETE, "/forum/post/{id}")
-//					.access("(@customSecurity.checkPostAuthor(#id, authentication.name) and hasRole('LIFE')) or (hasRole('MODERATOR') and hasRole('LIFE'))")
-//				.anyRequest()
-//					.hasRole("LIFE")
-//					);
+					.authenticated());} 
+		else {
+			System.out.println("in case of old password");
+			http.authorizeRequests(authorize -> authorize
+					.mvcMatchers("/account/register", "/forum/posts**")
+						.permitAll()
+					.mvcMatchers(HttpMethod.PUT, "/account/password")
+						.permitAll()
+					.anyRequest()
+						.denyAll()); 	
+		}
+
 		
 		return http.build();
 	}

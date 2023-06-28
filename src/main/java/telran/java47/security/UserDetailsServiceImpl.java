@@ -24,23 +24,26 @@ final UserAccountRepository userAccountRepository;
 	
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		System.out.println(username);
+		
 		UserAccount userAccount = userAccountRepository.findById(username)
 				.orElseThrow(() -> new UsernameNotFoundException(username));
 		
-		System.out.println(userAccount.getFirstName());
-		List<String> roles = userAccount.getRoles()
+
+		List<String>  roles = userAccount.getRoles()
 				.stream()
 				.map(r -> "ROLE_" + r)
 				.toList();
-		
+		System.out.println(userAccount.getDatePassword());
+		UserDetails user = null;
 		if (userAccount.getDatePassword().isAfter(LocalDateTime.now())) {
-			roles.add("ROLE_LIFE");
+			user = new User(username, userAccount.getPassword(), AuthorityUtils.createAuthorityList(roles.toArray(String[]::new)));
+		}else {
+			user = new User(username, userAccount.getPassword(), true, false, true, true, AuthorityUtils.createAuthorityList(roles.toArray(String[]::new)));
+			
 		}
-		userAccount.getRoles().forEach(System.out::println);
 	
-		return new User(username, userAccount.getPassword(), AuthorityUtils.createAuthorityList(roles.toArray(String[]::new)));
- 		
+		return user;
+	
 	}
 
 }
