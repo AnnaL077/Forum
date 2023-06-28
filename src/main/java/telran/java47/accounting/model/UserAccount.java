@@ -27,7 +27,7 @@ public class UserAccount {
 	
 	public UserAccount() {
 		roles = new HashSet<>();
-		datePassword = LocalDateTime.now().plusDays(1);
+		datePassword = LocalDateTime.now().plusDays(60);
 	}
 
 	public UserAccount(String login, String password, String firstName, String lastName) {

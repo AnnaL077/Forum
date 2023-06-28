@@ -33,7 +33,7 @@ final UserAccountRepository userAccountRepository;
 				.stream()
 				.map(r -> "ROLE_" + r)
 				.toList();
-		System.out.println(userAccount.getDatePassword());
+		//System.out.println(userAccount.getDatePassword());
 		UserDetails user = null;
 		if (userAccount.getDatePassword().isAfter(LocalDateTime.now())) {
 			user = new User(username, userAccount.getPassword(), AuthorityUtils.createAuthorityList(roles.toArray(String[]::new)));

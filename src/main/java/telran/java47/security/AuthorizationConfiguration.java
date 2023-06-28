@@ -24,18 +24,14 @@ public class AuthorizationConfiguration {
 		http.csrf().disable();
 		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 		
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		UserDetails userDetails = null;
-		if (authentication != null) {
-			System.out.println(authentication.toString());
-			userDetails = (UserDetails) authentication.getPrincipal();
-		}
 		
-		if (userDetails == null || userDetails.isAccountNonExpired()) {
-			System.out.println("in regular case");
+		
 		http.authorizeRequests(authorize -> authorize
-				.mvcMatchers("/account/register", "/forum/posts**")
+				.mvcMatchers("/account/register", "/forum/posts/tags", "/forum/posts**")
 					.permitAll()
+				.mvcMatchers(HttpMethod.PUT, "/account/password")
+					.access("isAuthenticated() or !principal.isAccountNonExpired()")
+					
 				.mvcMatchers("/account/user/{login}/role/{role}")
 					.hasRole("ADMINISTRATOR")
 				.mvcMatchers(HttpMethod.PUT, "/account/user/{login}")
@@ -51,17 +47,7 @@ public class AuthorizationConfiguration {
 				.mvcMatchers(HttpMethod.DELETE, "/forum/post/{id}")
 					.access("@customSecurity.checkPostAuthor(#id, authentication.name) or hasRole('MODERATOR')")
 				.anyRequest()
-					.authenticated());} 
-		else {
-			System.out.println("in case of old password");
-			http.authorizeRequests(authorize -> authorize
-					.mvcMatchers("/account/register", "/forum/posts**")
-						.permitAll()
-					.mvcMatchers(HttpMethod.PUT, "/account/password")
-						.permitAll()
-					.anyRequest()
-						.denyAll()); 	
-		}
+					.authenticated());
 
 		
 		return http.build();
